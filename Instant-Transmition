@@ -1,0 +1,112 @@
+local UIP = game:GetService("UserInputService")
+local TS = game:GetService("TweenService")
+local Player = game.Players.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local Frame = script.Parent.Parent
+local Camera = workspace.CurrentCamera
+
+--Bools
+local InTween = false
+local Action = nil
+
+--Tweens
+local StopMoving = TS:Create(Character:WaitForChild("Humanoid"),TweenInfo.new(0.3,Enum.EasingStyle.Sine),{WalkSpeed = 0})
+local NormalSpeed = TS:Create(Character:WaitForChild("Humanoid"),TweenInfo.new(0.3,Enum.EasingStyle.Sine),{WalkSpeed = 16})
+local ZoomIn = TS:Create(Camera,TweenInfo.new(0.5,Enum.EasingStyle.Sine),{FieldOfView = 55})
+local NormalFOV = TS:Create(Camera,TweenInfo.new(0.5,Enum.EasingStyle.Sine),{FieldOfView = 70})
+
+--Functions
+function FrameAppear()
+	spawn(function()
+		InTween = true
+		Frame.Visible = true
+
+		Frame.Background.ImageTransparency = 1
+		local BackgroundAppear = TS:Create(Frame.Background,TweenInfo.new(1,Enum.EasingStyle.Sine),{ImageTransparency = 0})
+		BackgroundAppear:Play()
+		for _, v in pairs(Frame:GetChildren()) do
+			v.Visible = true
+		end
+
+		BackgroundAppear.Completed:Wait()
+		InTween = false
+	end)
+end
+function FrameDissapear()
+	spawn(function()
+		InTween = true
+
+		Frame.Background.ImageTransparency = 0
+		local BackgroundDissapear = TS:Create(Frame.Background,TweenInfo.new(1,Enum.EasingStyle.Sine),{ImageTransparency = 1})
+		BackgroundDissapear:Play()
+		for _, v in pairs(Frame:GetChildren()) do
+			if v.Name ~= "Background" then
+				v.Visible = false
+			end
+		end
+
+		BackgroundDissapear.Completed:Wait()
+		Frame.Visible = false
+		InTween = false
+	end)
+end
+
+UIP.InputBegan:Connect(function(input,GPE)
+	if not GPE then
+		if input.KeyCode == Enum.KeyCode.T then
+			if not Frame.Visible and not InTween then
+				StopMoving:Play()
+				ZoomIn:Play()
+				spawn(function()
+					Animation = Character.Humanoid:LoadAnimation(script.Animation)
+					Animation:Play()
+					task.wait(23/60)
+					Animation:AdjustSpeed(0)
+				end)
+				
+				Action = "InMenu"
+				Character.VFX.Transmition:FireServer(Action)
+				FrameAppear()
+			elseif Frame.Visible and not InTween then
+				NormalSpeed:Play()
+				NormalFOV:Play()
+				Animation:AdjustSpeed(1)
+				
+				Action = "LeftMenu"
+				Character.VFX.Transmition:FireServer(Action)
+				FrameDissapear()
+			end
+		end
+	end
+end)
+
+script.Parent.MouseButton1Up:Connect(function()
+	if not InTween then
+		local TargetPlayer = game.Players:FindFirstChild(Frame.Prompt.Text)
+		if TargetPlayer ~= nil and TargetPlayer ~= Player then
+			Character.HumanoidRootPart.CFrame = CFrame.lookAt((TargetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,-5)).Position, TargetPlayer.Character.HumanoidRootPart.Position)
+			script.Parent.Starbar_Launch:Play()
+			NormalSpeed:Play()
+			NormalFOV:Play()
+			Animation:AdjustSpeed(1)
+			
+			Action = "LeftMenu"
+			Character.VFX.Transmition:FireServer(Action)
+			FrameDissapear()
+		elseif TargetPlayer ~= Player or TargetPlayer ~= nil then
+			script.Parent.Error:Play()
+		end
+	end
+end)
+
+Player.Main.InMainGUI.Changed:Connect(function()
+	if Player.Main.InMainGUI.Value then
+		NormalSpeed:Play()
+		NormalFOV:Play()
+		Animation:AdjustSpeed(1)
+		
+		Action = "LeftMenu"
+		Character.VFX.Transmition:FireServer(Action)
+		FrameDissapear()
+	end
+end)
